@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     mariadb-client-compat \
+    nginx \
+    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
@@ -36,7 +38,7 @@ COPY composer.json composer.lock ./
 RUN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-cache --no-scripts
 
 # Copy full project
-COPY . .
+COPY . . 
 
 # Ensure artisan has execute permissions
 RUN chmod +x artisan
@@ -49,10 +51,20 @@ RUN mkdir -p storage/logs storage/app storage/framework/cache storage/framework/
     chown -R www-data:www-data storage bootstrap/cache && \
     chmod -R 775 storage bootstrap/cache
 
+# Configure Nginx
+COPY docker/nginx.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+# Configure PHP-FPM
+COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+
+# Configure Supervisor to run both Nginx and PHP-FPM
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
-EXPOSE 9000
+EXPOSE 8080
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["php-fpm"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
