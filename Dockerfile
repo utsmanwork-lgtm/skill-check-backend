@@ -28,11 +28,18 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Copy project files
+# Copy composer files first
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies (before copying app code to use Docker cache)
+# Skip post-autoload scripts since artisan won't exist yet
+RUN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-cache --no-scripts
+
+# Copy full project
 COPY . .
 
-# Install PHP dependencies
-RUN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-cache
+# Now run post-autoload scripts
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer run-script post-autoload-dump
 
 # Create necessary directories
 RUN mkdir -p storage/logs storage/app storage/framework/cache storage/framework/sessions storage/framework/views && \
