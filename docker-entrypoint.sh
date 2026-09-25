@@ -19,16 +19,28 @@ fi
 
 # Run migrations if database is ready (for php-fpm or supervisord)
 if [ "$1" = "php-fpm" ] || [ "$1" = "/usr/bin/supervisord" ]; then
-    # Wait for MySQL to be ready
+    # Wait for MySQL to be ready with timeout
     echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
-    until MYSQL_PWD=${DB_PASSWORD} mysql -h ${DB_HOST} -u ${DB_USERNAME} -P ${DB_PORT} -e "SELECT 1" &> /dev/null; do
-        echo "Waiting for MySQL..."
+    timeout=30
+    ready=false
+    while [ $timeout -gt 0 ]; do
+        if MYSQL_PWD=${DB_PASSWORD} mysql -h ${DB_HOST} -u ${DB_USERNAME} -P ${DB_PORT} -e "SELECT 1" &> /dev/null; then
+            ready=true
+            break
+        fi
+        echo "Waiting for MySQL... ($timeout seconds left)"
         sleep 2
+        timeout=$((timeout - 2))
     done
     
-    echo "Database is ready. Running migrations..."
-    php artisan migrate --force
-    php artisan db:seed --force
+    if [ "$ready" = true ]; then
+        echo "Database is ready. Running migrations..."
+        php artisan migrate --force
+        php artisan db:seed --force
+    else
+        echo "WARNING: Could not connect to MySQL after 30 seconds. Continuing without migrations."
+        echo "Migrations will need to run manually or on next deployment."
+    fi
 fi
 
 # Substitute PORT in nginx config if needed (Railway provides $PORT)
