@@ -10,9 +10,10 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
+    libxml2-dev \
     zip \
     unzip \
-    mysql-client \
+    mariadb-client-compat \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
@@ -22,10 +23,6 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     pdo \
     pdo_mysql \
     bcmath \
-    ctype \
-    fileinfo \
-    json \
-    tokenizer \
     xml
 
 # Install Composer
