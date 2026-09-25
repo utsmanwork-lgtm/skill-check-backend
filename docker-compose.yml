@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: skill-check-mysql
+    environment:
+      MYSQL_DATABASE: skill_check
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: password
+      MYSQL_USER: skill_user
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - skill-check
+
+  app:
+    image: php:8.3-fpm
+    container_name: skill-check-app
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ./docker/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: skill_check
+      DB_USERNAME: skill_user
+      DB_PASSWORD: password
+    depends_on:
+      - mysql
+    networks:
+      - skill-check
+    command: php-fpm
+
+  nginx:
+    image: nginx:alpine
+    container_name: skill-check-nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/app
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - skill-check
+
+volumes:
+  mysql_data:
+
+networks:
+  skill-check:
+    driver: bridge
