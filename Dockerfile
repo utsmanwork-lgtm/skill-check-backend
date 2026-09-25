@@ -31,9 +31,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Copy composer files first
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies (before copying app code to use Docker cache)
-# Skip post-autoload scripts since artisan won't exist yet
-RUN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-cache --no-scripts
+# Install PHP dependencies (update lock file for new packages, then install)
+RUN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_MEMORY_LIMIT=-1 composer update --no-dev --optimize-autoloader --no-cache --no-interaction
 
 # Copy full project
 COPY . .
