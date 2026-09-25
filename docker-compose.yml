@@ -17,7 +17,9 @@ services:
       - skill-check
 
   app:
-    image: php:8.3-fpm
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: skill-check-app
     working_dir: /app
     volumes:
