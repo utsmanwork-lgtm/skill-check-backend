@@ -38,6 +38,9 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_MEMORY_LIMIT=-1 composer install --no-de
 # Copy full project
 COPY . .
 
+# Ensure artisan has execute permissions
+RUN chmod +x artisan
+
 # Now run post-autoload scripts
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer run-script post-autoload-dump
 
