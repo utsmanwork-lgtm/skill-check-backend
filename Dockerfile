@@ -45,7 +45,7 @@ RUN chmod +x artisan
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer run-script post-autoload-dump
 
 # Create necessary directories
-RUN mkdir -p storage/logs storage/app storage/framework/cache storage/framework/sessions storage/framework/views && \
+RUN mkdir -p storage/logs storage/app storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache && \
     chown -R www-data:www-data storage bootstrap/cache && \
     chmod -R 775 storage bootstrap/cache
 
