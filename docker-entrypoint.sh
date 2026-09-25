@@ -25,28 +25,16 @@ else
     echo "WARNING: MYSQLHOST not set, using existing DB_* vars"
 fi
 
-# Wait for MySQL if DB vars are set (for serve, migrate, etc.)
+# Wait a bit for the database to start, then try to run migrations (non-blocking)
 if [ -n "$DB_HOST" ]; then
-    echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
-    timeout=30
-    ready=false
-    while [ $timeout -gt 0 ]; do
-        if MYSQL_PWD=${DB_PASSWORD} mysql -h ${DB_HOST} -u ${DB_USERNAME} -P ${DB_PORT} -e "SELECT 1" &> /dev/null; then
-            ready=true
-            break
-        fi
-        echo "Waiting for MySQL... ($timeout seconds left)"
-        sleep 2
-        timeout=$((timeout - 2))
-    done
-    
-    if [ "$ready" = true ]; then
-        echo "Database is ready. Running migrations..."
-        php artisan migrate --force
+    echo "Waiting for MySQL to start... (will try to run migrations after a short delay)"
+    sleep 5
+    echo "Attempting to run migrations..."
+    if php artisan migrate --force --no-interaction; then
+        echo "Migrations ran successfully."
         php artisan db:seed --force
     else
-        echo "WARNING: Could not connect to MySQL after 30 seconds. Continuing without migrations."
-        echo "Migrations will need to run manually or on next deployment."
+        echo "WARNING: Migrations failed. The application will still start, but you may need to run migrations manually."
     fi
 fi
 
