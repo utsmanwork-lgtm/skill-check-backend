@@ -15,11 +15,18 @@ if [ -n "$MYSQLHOST" ]; then
     export DB_USERNAME=${MYSQLUSER}
     export DB_PASSWORD=${MYSQLPASSWORD}
     export DB_DATABASE=${MYSQLDATABASE}
+    echo "MySQL config from Railway env vars:"
+    echo "  DB_HOST=$DB_HOST"
+    echo "  DB_PORT=$DB_PORT"
+    echo "  DB_USERNAME=$DB_USERNAME"
+    echo "  DB_DATABASE=${DB_DATABASE}"
+    # Do not print password
+else
+    echo "WARNING: MYSQLHOST not set, using existing DB_* vars"
 fi
 
-# Run migrations if database is ready (for php-fpm or supervisord)
-if [ "$1" = "php-fpm" ] || [ "$1" = "/usr/bin/supervisord" ]; then
-    # Wait for MySQL to be ready with timeout
+# Wait for MySQL if DB vars are set (for serve, migrate, etc.)
+if [ -n "$DB_HOST" ]; then
     echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
     timeout=30
     ready=false
@@ -43,10 +50,11 @@ if [ "$1" = "php-fpm" ] || [ "$1" = "/usr/bin/supervisord" ]; then
     fi
 fi
 
-# Substitute PORT in nginx config if needed (Railway provides $PORT)
-if [ -n "$PORT" ]; then
-    echo "Substituting PORT=$PORT into nginx config"
-    sed -i "s/listen \$PORT;/listen $PORT;/" /etc/nginx/sites-available/default
+# If the command is "serve", run the Laravel development server
+if [ "$1" = "serve" ]; then
+    echo "Starting Laravel development server on host 0.0.0.0 port ${PORT:-8000}"
+    exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
 fi
 
+# Default: exec the provided command (e.g., for bash, etc.)
 exec "$@"
